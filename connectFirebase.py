@@ -6,9 +6,6 @@ import serial
 import re
 import datetime
 from pyfcm import FCMNotification as FCM
-from time import sleep
-
-from pyfcm import FCMNotification as FCM
 
 fcm = FCM('AAAAVFTZnik:APA91bGadOo-pamyUCEKftawzJuhsMWQtZ7u-Aq19GKgvM3FPZcz-xTfj80L91Wdzo8TuSCeBEOFgyfAyZnoLudydBdD_njwlXKsdIUFVrZsYuE6NVPO2KxLk_U7hCG0Dp4dJtu2_G7q')
 
@@ -19,7 +16,7 @@ def sendFCM(title, body):
         message_body=body
     )
 
-def getTime():
+def getDateTime():
     now = datetime.datetime.now()
     y = now.year
     M = now.month
@@ -27,7 +24,23 @@ def getTime():
     h = now.hour
     m = now.minute
     s = now.second
-    timeMsg = "%s년 %s월 %s일 %s시 %s분 %s초" % (y, M, d, h, m, s)
+    dateTimeMsg = "%s년 %s월 %s일 %s시 %s분 %s초" % (y, M, d, h, m, s)
+    return dateTimeMsg
+
+def getDate():
+    now = datetime.datetime.now()
+    y = now.year
+    M = now.month
+    d = now.day
+    dateMsg = "%s년 %s월 %s일" % (y, M, d)
+    return dateMsg
+
+def getTime():
+    now = datetime.datetime.now()
+    h = now.hour
+    m = now.minute
+    s = now.second
+    timeMsg = "%s시 %s분 %s초" % (h, m, s)
     return timeMsg
 
 def setBool(ref,boolean):
@@ -47,12 +60,24 @@ def sendChange(stateType, value):
     ser.write(msg.encode())
     ser.flush()
 
+def addHistory(ref, type):
+    stamp = datetime.datetime.timestamp()
+    doc = ref.document('%s [%s]'%(stamp, type))
+    doc.set({
+        u'Type': u'%s' % type,
+        u'Date': u'%s' % getDate(),
+        u'Time': u'%s' % getTime(),
+    })
+
+
 #firebase 연결
-cred = credentials.Certificate("venv/bluebox-dacc6-firebase-adminsdk-ml4xa-0d3b1946c3.json")
+# cred = credentials.Certificate("venv/bluebox-dacc6-firebase-adminsdk-ml4xa-0d3b1946c3.json")
+cred = credentials.Certificate("/home/pi/blackbox/2019-embedded_capstone_project/venv/bluebox-dacc6-firebase-adminsdk-ml4xa-0d3b1946c3.json")
 firebase_admin.initialize_app(cred,{'databaseURL':'https://bluebox-dacc6.firebaseio.com/'})
 
 #포트 연결
-ser = serial.Serial('/COM3',9600)
+# ser = serial.Serial('/COM3',9600)
+ser = serial.Serial('/dev/ttyACM0',9600)
 
 #레퍼런스 선언
 ref=db.reference('/')
@@ -117,16 +142,25 @@ while True:
                 setBool(lockStateRef, boolean)
                 if(''.join(boolean) == '0'):
                     sendFCM("잠금설정","비밀번호가 변경되었습니다.")
+                    addHistory(history_ref, '잠금설정')
                 elif(''.join(boolean) == '1'):
-                    sendFCM("잠금해제",getTime())
+                    sendFCM("잠금해제", getDateTime())
+                    addHistory(history_ref, '잠금해제')
             elif ('Warn' in flag or 'PasswordError' in flag):
                 setBool(warnStateRef, boolean)
                 body = ''
+                boolStr = ''.join(boolean)
                 if('Warn' in flag):
-                    body = '보관함에 큰 충격이 가해졌습니다!'
+                    if(boolStr=='1'):
+                        body = '보관함에 큰 충격이 가해졌습니다!'
+                        addHistory(history_ref, '충격 감지')
                 elif('PasswordError' in flag):
-                    body = '비밀번호 입력을 3회 실패했습니다!'
+                    if (boolStr == '1'):
+                        body = '비밀번호 입력을 3회 실패했습니다!'
+                        addHistory(history_ref,'비밀번호 3회 실패')
                 sendFCM('경보 발생',body)
+        elif('Init' in flag):
+            sendFCM("서버 접속 성공","초기화 완료")
 
     else:
         lockVal = lockStateRef.get()
