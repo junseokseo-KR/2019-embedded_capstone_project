@@ -61,7 +61,7 @@ def sendChange(stateType, value):
     ser.flush()
 
 def addHistory(ref, type):
-    stamp = datetime.datetime.timestamp()
+    stamp = datetime.datetime.now().timestamp()
     doc = ref.document('%s [%s]'%(stamp, type))
     doc.set({
         u'Type': u'%s' % type,
@@ -71,13 +71,13 @@ def addHistory(ref, type):
 
 
 #firebase 연결
-# cred = credentials.Certificate("venv/bluebox-dacc6-firebase-adminsdk-ml4xa-0d3b1946c3.json")
-cred = credentials.Certificate("/home/pi/blackbox/2019-embedded_capstone_project/venv/bluebox-dacc6-firebase-adminsdk-ml4xa-0d3b1946c3.json")
+cred = credentials.Certificate("venv/bluebox-dacc6-firebase-adminsdk-ml4xa-0d3b1946c3.json")
+# cred = credentials.Certificate("/home/pi/blackbox/2019-embedded_capstone_project/venv/bluebox-dacc6-firebase-adminsdk-ml4xa-0d3b1946c3.json")
 firebase_admin.initialize_app(cred,{'databaseURL':'https://bluebox-dacc6.firebaseio.com/'})
 
 #포트 연결
-# ser = serial.Serial('/COM3',9600)
-ser = serial.Serial('/dev/ttyACM0',9600)
+ser = serial.Serial('/COM3',9600)
+# ser = serial.Serial('/dev/ttyACM0',9600)
 
 #레퍼런스 선언
 ref=db.reference('/')
@@ -139,6 +139,8 @@ while True:
             elif('Door' in flag):
                 setBool(doorStateRef,boolean)
             elif ('Lock' in flag):
+                lockVal = bool(int(''.join(boolean)))
+                lastLockVal = bool(int(''.join(boolean)))
                 setBool(lockStateRef, boolean)
                 if(''.join(boolean) == '0'):
                     sendFCM("잠금설정","비밀번호가 변경되었습니다.")
@@ -161,6 +163,10 @@ while True:
                 sendFCM('경보 발생',body)
         elif('Init' in flag):
             sendFCM("서버 접속 성공","초기화 완료")
+            setBool(sensStateRef, '0')
+            setBool(doorStateRef, '0')
+            setBool(lockStateRef, '0')
+            setBool(warnStateRef, '0 ')
 
     else:
         lockVal = lockStateRef.get()
