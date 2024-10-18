@@ -7,11 +7,11 @@ import re
 import datetime
 from pyfcm import FCMNotification as FCM
 
-fcm = FCM('AAAAVFTZnik:APA91bGadOo-pamyUCEKftawzJuhsMWQtZ7u-Aq19GKgvM3FPZcz-xTfj80L91Wdzo8TuSCeBEOFgyfAyZnoLudydBdD_njwlXKsdIUFVrZsYuE6NVPO2KxLk_U7hCG0Dp4dJtu2_G7q')
+fcm = FCM('')
 
 def sendFCM(title, body):
     fcm.notify_single_device(
-        registration_id='fiFDMAaL_ZE:APA91bFJi3LAdZg8DpDQdAt9iQDGRphMVZfCvWnEuk-TRFHssRe52RozV8pNeObj9uAP0f6jNt_kOwzucb3PSkUVolA_frOJVYq5aB22GZiP3ZCBQclGrjWaouBNQVVAsg5IeTmMrJ2u',
+        registration_id='',
         message_title=title,
         message_body=body
     )
